@@ -1,0 +1,43 @@
+{
+    "name": "Debian 9",
+    "category": "guest",
+    "description": "Debian 9 image",
+    "vendor_name": "Debian",
+    "vendor_url": "http://www.debian.org/",
+    "documentation_url": "http://www.debian.org/",
+    "product_name": "Debian",
+    "product_url": "http://www.debian.org/",
+    "registry_version": 3,
+    "status": "stable",
+    "maintainer": "Lucas Nussbaum",
+    "maintainer_email": "lucas@debian.org",
+    "usage": "login/password is root/root\nthis image uses predictable network interface names (ens3, ens4, etc.). p0 is ens3.",
+    "symbol": "linux_guest.svg",
+    "port_name_format": "p{0}",
+    "qemu": {
+        "adapter_type": "e1000",
+        "adapters": 4,
+        "ram": 256,
+        "arch": "x86_64",
+        "console_type": "telnet",
+        "kvm": "allow"
+    },
+    "images": [
+        {
+            "filename": "debian9-0.2.qcow2",
+            "version": "0.2",
+            "md5sum": "1989455b5e0329acd9af17532536dca8",
+            "filesize": 970981376,
+            "download_url": "https://people.debian.org/~lucas/gns3/",
+            "direct_download_url": "https://people.debian.org/~lucas/gns3/debian9-0.2.qcow2.zip"
+        }
+    ],
+    "versions": [
+        {
+            "name": "0.2",
+            "images": {
+                "hda_disk_image": "debian9-0.2.qcow2"
+            }
+        }
+    ]
+}

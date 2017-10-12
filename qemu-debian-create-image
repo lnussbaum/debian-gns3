@@ -4,16 +4,16 @@ set -e
 
 # Example usage:
 # - use local APT cache, and set-up serial console
-#   MIRROR="http://localhost:9999/debian" GRUB_CMDLINE="console=tty0 console=ttyS0" ./qemu-debian-create-image foo.img myhostname stretch
+#   MIRROR="http://localhost:9999/debian" GRUB_CMDLINE="console=tty0 console=ttyS0" ./qemu-debian-create-image foo.qcow2 myhostname stretch
 # - use local APT cache, and set-up serial console, no network interface configuration (default is DHCP)
-#   MIRROR="http://localhost:9999/debian" GRUB_CMDLINE="console=tty0 console=ttyS0" ETH_DEVICE="no" ./qemu-debian-create-image foo.img myhostname stretch
+#   MIRROR="http://localhost:9999/debian" GRUB_CMDLINE="console=tty0 console=ttyS0" ETH_DEVICE="no" ./qemu-debian-create-image foo.qcow2 myhostname stretch
 # Then start with:
 #  kvm -hda foo.img -net nic -net user -m 256 -serial stdio
 
 # Configs overwritable via environment variables
 VSYSTEM=${VSYSTEM:=qemu}						# Either 'qemu' or 'kvm'
 FLAVOUR=${FLAVOUR:=debian}					# Either 'debian' or 'ubuntu'
-INCLUDES=${INCLUDES:="less,vim,sudo,openssh-server"}
+INCLUDES=${INCLUDES:="less,vim,sudo,openssh-server,dbus,net-tools,traceroute,mtr-tiny,telnet,wget,curl,ethtool"}
 MIRROR=${MIRROR:="http://deb.debian.org/debian"}
 #MIRROR=${MIRROR:="http://localhost:3142/debian"}
 #MIRROR=${MIRROR:="http://archive.ubuntu.com/ubuntu/"}
@@ -23,7 +23,7 @@ APT_CACHER=${APT_CACHER:=no}
 IMGSIZE=${IMGSIZE:=8G}
 ROOTPASSWD=${ROOTPASSWD:=root}
 DISKNAME=${DISKNAME:=sda}
-GRUB_CMDLINE=${GRUB_CMDLINE:=quiet}
+GRUB_CMDLINE=${GRUB_CMDLINE:=console=ttyS0}
 ETH_DEVICE=${ETH_DEVICE:=ens3}
 
 clean_debian() {
@@ -157,10 +157,13 @@ chroot $MNT_DIR mount -t proc none /proc || fail "cannot mount /proc"
 chroot $MNT_DIR mount -t sysfs none /sys || fail "cannot mount /sys"
 LANG=C DEBIAN_FRONTEND=noninteractive chroot $MNT_DIR apt-get install -y --force-yes -q $BOOT_PKG || fail "cannot install $BOOT_PKG"
 
-chroot $MNT_DIR grub-install $DISK || fail "cannot install grub"
+chroot $MNT_DIR grub-install --skip-fs-probe $DISK || fail "cannot install grub"
 sed -i "s|GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"${GRUB_CMDLINE}\"|" $MNT_DIR/etc/default/grub
+sed -i "s|GRUB_TIMEOUT=5|GRUB_TIMEOUT=1|" $MNT_DIR/etc/default/grub
+echo 'GRUB_DISABLE_OS_PROBER=true' >> $MNT_DIR/etc/default/grub
 chroot $MNT_DIR update-grub || fail "cannot update grub"
 chroot $MNT_DIR apt-get clean || fail "unable to clean apt cache"
+chroot $MNT_DIR rm -rf /var/lib/apt/lists/*
 
 sed -i "s|${DISK}p1|/dev/${DISKNAME}1|g" $MNT_DIR/boot/grub/grub.cfg
 sed -i "s|${DISK}p2|/dev/${DISKNAME}2|g" $MNT_DIR/boot/grub/grub.cfg
@@ -169,8 +172,13 @@ sed -i "s|${DISK}p2|/dev/${DISKNAME}2|g" $MNT_DIR/boot/grub/grub.cfg
 echo "root:${ROOTPASSWD}" | chroot $MNT_DIR chpasswd
 
 echo "Finishing grub installation..."
-grub-install $DISK --root-directory=$MNT_DIR --modules="biosdisk part_msdos" || fail "cannot reinstall grub"
+grub-install $DISK --root-directory=$MNT_DIR --modules="biosdisk part_msdos" --skip-fs-probe || fail "cannot reinstall grub"
 
 echo "SUCCESS!"
 clean_debian
+
+echo "Shrinking qcow2 file..."
+qemu-img convert -O qcow2 $FILE $FILE.new
+mv $FILE.new $FILE
+
 exit 0
