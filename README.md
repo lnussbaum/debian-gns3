@@ -1,8 +1,11 @@
-# Debian 9 image for GNS3
+# Debian 9 and Debian 10 image for GNS3
 
 Simple script to create a QEMU Debian image using debootstrap and nbd, suitable for use as a GNS3 appliance.
 
 Run with: ETH_DEVICE=no ./qemu-debian-create-image stretch3.qcow2 debian9 stretch
+
+Or for Debian 10:
+ETH_DEVICE=no ./qemu-debian-create-image debian10.qcow2 debian10 buster
 
  * Initially automated from <http://diogogomes.com/2012/07/13/debootstrap-kvm-image/> by Kamil Trzcinski <http://ayufan.eu>
  * Later modified to <https://gist.github.com/spectra/10301941>
